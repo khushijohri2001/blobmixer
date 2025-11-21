@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { EXRLoader, OrbitControls } from "three/examples/jsm/Addons.js";
+import { EXRLoader } from "three/examples/jsm/Addons.js";
 import CustomShaderMaterial from "three-custom-shader-material/vanilla";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import vertexShader from "./shaders/vertex.glsl";
@@ -49,7 +49,7 @@ const uniforms = {
   uSmallWaveTimeFrequency: { value: 0.5 },
 };
 
-const geometry = new THREE.IcosahedronGeometry(1.2, 64);
+const geometry = new THREE.IcosahedronGeometry(1, 64);
 const material = new CustomShaderMaterial({
   baseMaterial: THREE.MeshPhysicalMaterial,
   vertexShader,
@@ -113,11 +113,6 @@ const texts = blobs.map((blob, index) => {
   return myText;
 });
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.damping = true;
-controls.dampingFactor = 0.2;
-controls.enablePan = false;
-controls.enableZoom = false;
 
 
 window.addEventListener("wheel", (e) => {
@@ -208,10 +203,43 @@ function updateBlob(config) {
   if(config.wireframe !== undefined) material.wireframe = config.wireframe;
 }
 
+function updateSphereScale() {
+  const width = window.innerWidth;
+
+  if (width <= 600) {
+    sphere.scale.set(0.5, 0.5, 0.5); // Mobile
+  } else if (width <= 1024) {
+    sphere.scale.set(0.6, 0.6, 0.6); // Tablet
+  } else {
+    sphere.scale.set(1, 1,1); // Desktop
+  }
+}
+
+function updateTextScale() {
+  const baseSize = window.innerWidth < 600 
+    ? 0.0004  // mobile
+    : 0.0003;   // desktop
+
+  texts.forEach(t => {
+    t.fontSize = window.innerWidth * baseSize;
+    t.sync();
+  });
+}
+
+
+
+
+// call once at start
+updateSphereScale();
+updateTextScale();
+
+
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  updateSphereScale();
+  updateTextScale();
 });
 
 const clock = new THREE.Clock();
@@ -220,7 +248,6 @@ loadingManager.onLoad = () => {
   function animate() {
     requestAnimationFrame(animate);
     uniforms.uTime.value = clock.getElapsedTime() * 0.1;
-    controls.update();
     renderer.render(scene, camera);
   }
 
